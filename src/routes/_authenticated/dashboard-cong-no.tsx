@@ -35,8 +35,24 @@ export const Route = createFileRoute("/_authenticated/dashboard-cong-no")({
 
 function DebtDashboard() {
   const animation = useChartAnimation();
+  const qc = useQueryClient();
   const { filtered, scope, employees, empMap, today, loading } = useFilteredRecords();
-  const { period } = useFilters();
+  const { period, sub } = useFilters();
+  const { isAdmin } = useMe();
+  const [detail, setDetail] = useState<SalesRecord | null>(null);
+
+  async function update(v: FormValues) {
+    if (!detail || !isAdmin) return false;
+    const { error } = await supabase.from("sales_records").update(v).eq("id", detail.id);
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
+    toast.success("Đã cập nhật phiếu");
+    setDetail(null);
+    qc.invalidateQueries({ queryKey: ["records"] });
+    return true;
+  }
 
   const s = useMemo(() => {
     const buckets = { safe: 0, soon: 0, overdue: 0 };
