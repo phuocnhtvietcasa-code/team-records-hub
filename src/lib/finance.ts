@@ -310,14 +310,17 @@ export function formatDateVN(s: string): string {
   return `${d}/${m}/${y}`;
 }
 
-/** 6 ngày làm việc (T2..T7) của tuần chứa `today`, dạng yyyy-mm-dd. */
-export function weekDays(today: Date): string[] {
-  const s = periodStart("week", today);
-  if (!s) return [];
-  return Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(s.getTime() + i * DAY);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  });
+/** Các ngày làm việc (bỏ Chủ nhật) của tuần đang chọn, dạng yyyy-mm-dd. */
+export function weekDays(today: Date, sub?: number | null): string[] {
+  const range = periodRange("week", today, sub);
+  if (!range) return [];
+  const days: string[] = [];
+  for (let t = range.start.getTime(); t <= range.end.getTime(); t += DAY) {
+    const d = new Date(t);
+    if (d.getDay() === 0) continue;
+    days.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+  }
+  return days;
 }
 
 export type AgingBucket = "0-30" | "31-60" | ">60";
