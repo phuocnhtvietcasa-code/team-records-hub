@@ -15,9 +15,9 @@ describe("shared HTML export lock", () => {
     const wrapper = ({ children }: { children: ReactNode }) => <QueryClientProvider client={qc}>{children}</QueryClientProvider>;
     const { result } = renderHook(() => [useOfflineDownload(), useOfflineDownload()], { wrapper });
     let pending: Promise<void> | undefined;
-    act(() => { pending = result.current[0].download(); });
+    act(() => { pending = result.current[0]!.download(); });
     expect(result.current.every((hook) => hook.isExporting)).toBe(true);
-    await act(async () => { await result.current[1].download(); });
+    await act(async () => { await result.current[1]!.download(); });
     expect(exportOfflineHtml).toHaveBeenCalledTimes(1);
     await act(async () => { fail?.(new Error("Failed fetch")); await pending; });
     await waitFor(() => expect(result.current.every((hook) => !hook.isExporting)).toBe(true));

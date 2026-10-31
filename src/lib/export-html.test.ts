@@ -25,7 +25,7 @@ describe("encrypted HTML export", () => {
     const html = await new Promise<string>((resolve) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result)); reader.readAsText(blob); });
     const match = html.match(/window\.__OFFLINE_DATA__ = "([^"]+)"/);
     if (!match) throw new Error("No embedded payload");
-    const payload = JSON.parse(decrypt(match[1], "test-password"));
+    const payload = JSON.parse(decrypt(match[1]!, "test-password"));
     expect(payload.records).toEqual([{ voucher_no: "P001", payment_amount: 2500000 }]);
     expect(payload.employees).toEqual([{ full_name: "Nguyễn An" }]);
     expect(payload.kpiTargets).toEqual([{ amount: 12000000 }]);
