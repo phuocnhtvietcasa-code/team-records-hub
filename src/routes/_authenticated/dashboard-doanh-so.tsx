@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useFilteredRecords } from "@/lib/use-filtered";
-import { companyNet, costBreakdown, formatVND, kpiStatus, monthlyKpi, netRevenue, periodKpi, PERIOD_LABELS } from "@/lib/finance";
+import { companyNet, companyRevenue, costBreakdown, formatVND, kpiStatus, monthlyKpi, netRevenue, periodKpi, PERIOD_LABELS } from "@/lib/finance";
 import { shortMoney } from "@/components/dashboard/ui";
 import { DashboardFrame, DashboardHero, DashboardRing, COST_COLORS, KPI_STATUS_COLOR, KpiStatusBadge, REVENUE_COLORS, RevenueMetric, RevenueProgress, RevenueSection, Sparkline, TrendBadge } from "@/components/dashboard/revenue-ui";
 import { buildTrend } from "@/components/dashboard/trend";

@@ -45,7 +45,7 @@ export const Route = createFileRoute("/_authenticated/phieu")({
 function PhieuPage() {
   const qc = useQueryClient();
   const { canManage, canWrite, me, role } = useMe();
-  const { filtered, employees, empMap, today } = useFilteredRecords();
+  const { listFiltered: filtered, listEmployees, employees, empMap, today } = useFilteredRecords();
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<SalesRecord | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
@@ -156,7 +156,7 @@ function PhieuPage() {
     <div className="space-y-6">
       <div className="grid min-w-0 gap-4 sm:flex sm:flex-wrap sm:items-end sm:justify-between">
         <h1 className="min-w-0 text-2xl font-semibold sm:text-3xl">Phiếu doanh số & công nợ</h1>
-        <FilterBar />
+        <FilterBar employees={listEmployees} />
       </div>
       <div className={`grid min-w-0 gap-6 ${canWrite ? "xl:grid-cols-[420px_minmax(0,1fr)]" : ""}`}>
         {canWrite && <div className="min-w-0 h-fit rounded-xl border bg-card p-4 shadow-card sm:p-5">
