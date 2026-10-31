@@ -233,16 +233,57 @@ export function periodStart(p: Period, today: Date): Date | null {
   }
 }
 
-export function inPeriod(dateStr: string, p: Period, today: Date): boolean {
-  const s = periodStart(p, today);
-  if (!s) return true;
-  const d = parseDate(dateStr);
+export interface PeriodRange {
+  start: Date;
+  end: Date;
+}
+
+/** Số tuần trong tháng (mỗi tuần 7 ngày: 1–7, 8–14, 15–21, 22–hết tháng). */
+export function monthWeekCount(today: Date): number {
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  return Math.ceil(lastDay / 7);
+}
+
+/** Tuần (1-based) của ngày `today` trong tháng. */
+export function currentMonthWeek(today: Date): number {
+  return Math.ceil(today.getDate() / 7);
+}
+
+/** Khoảng ngày của kỳ đang chọn; `sub` = tuần trong tháng / tháng trong năm / quý (1-based), null = kỳ hiện tại. */
+export function periodRange(p: Period, today: Date, sub?: number | null): PeriodRange | null {
+  const t = startOfDay(today);
+  const y = t.getFullYear();
   if (p === "week") {
-    // Tuần làm việc: Thứ 2 → Thứ 7, không tính Chủ nhật
-    const sat = new Date(s.getTime() + 5 * DAY);
-    return d >= s && d <= sat && d.getDay() !== 0;
+    if (sub == null) {
+      const dow = (t.getDay() + 6) % 7;
+      const mon = new Date(t.getTime() - dow * DAY);
+      return { start: mon, end: new Date(mon.getTime() + 5 * DAY) };
+    }
+    const first = (sub - 1) * 7 + 1;
+    const lastDay = new Date(y, t.getMonth() + 1, 0).getDate();
+    const last = Math.min(sub * 7, lastDay);
+    return { start: new Date(y, t.getMonth(), first), end: new Date(y, t.getMonth(), last) };
   }
-  return d >= s && d <= startOfDay(today);
+  if (p === "month") {
+    const m = sub == null ? t.getMonth() : sub - 1;
+    return { start: new Date(y, m, 1), end: new Date(y, m + 1, 0) };
+  }
+  if (p === "quarter") {
+    const q = sub == null ? Math.floor(t.getMonth() / 3) + 1 : sub;
+    const firstMonth = (q - 1) * 3;
+    return { start: new Date(y, firstMonth, 1), end: new Date(y, firstMonth + 3, 0) };
+  }
+  if (p === "year") return { start: new Date(y, 0, 1), end: t };
+  return null;
+}
+
+export function inPeriod(dateStr: string, p: Period, today: Date, sub?: number | null): boolean {
+  const range = periodRange(p, today, sub);
+  if (!range) return true;
+  const d = parseDate(dateStr);
+  if (p === "week" && d.getDay() === 0) return false; // Tuần làm việc: Thứ 2 → Thứ 7, không tính Chủ nhật
+  const end = sub == null && p !== "quarter" && p !== "month" ? startOfDay(today) : range.end;
+  return d >= range.start && d <= end;
 }
 
 /** Hệ số tháng để quy đổi mục tiêu tháng sang kỳ đang lọc. */
