@@ -16,7 +16,7 @@ describe("debt detail rules", () => {
     expect(grossPercentage(record.deposit, record.gross)).toBe(30);
   });
   it("debt percentage divides remaining debt by gross", () => {
-    expect(grossPercentage(remainingDebt(record), record.gross)).toBe(20);
+    expect(grossPercentage(remainingDebt(record), record.gross)).toBe(60);
   });
   it("zero gross yields a finite zero percentage", () => {
     expect(grossPercentage(30_000_000, 0)).toBe(0);

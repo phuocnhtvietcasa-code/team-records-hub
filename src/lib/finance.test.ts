@@ -109,6 +109,40 @@ describe("week = Monday to Saturday", () => {
   it("weekDays lists Mon..Sat", () => expect(weekDays(wed)).toEqual(["2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23","2026-10-24"]));
 });
 
+describe("selectable week/month/quarter ranges", () => {
+  const oct = new Date(2026, 9, 31); // Sat 31/10/2026
+  it("week sub 1 covers days 1-7 of the month, still skipping Sunday", () => {
+    expect(inPeriod("2026-10-01", "week", oct, 1)).toBe(true);
+    expect(inPeriod("2026-10-04", "week", oct, 1)).toBe(false); // Chủ nhật
+    expect(inPeriod("2026-10-08", "week", oct, 1)).toBe(false);
+    expect(inPeriod("2026-10-08", "week", oct, 2)).toBe(true);
+  });
+  it("last week of month ends on the last day", () => {
+    expect(inPeriod("2026-10-31", "week", oct, 5)).toBe(true);
+    expect(inPeriod("2026-10-21", "week", oct, 5)).toBe(false);
+  });
+  it("month sub picks that month of the current year", () => {
+    expect(inPeriod("2026-03-15", "month", oct, 3)).toBe(true);
+    expect(inPeriod("2026-10-15", "month", oct, 3)).toBe(false);
+    expect(inPeriod("2025-03-15", "month", oct, 3)).toBe(false);
+  });
+  it("quarter sub uses static ranges Q1..Q4", () => {
+    expect(inPeriod("2026-01-01", "quarter", oct, 1)).toBe(true);
+    expect(inPeriod("2026-03-31", "quarter", oct, 1)).toBe(true);
+    expect(inPeriod("2026-04-01", "quarter", oct, 1)).toBe(false);
+    expect(inPeriod("2026-12-31", "quarter", oct, 4)).toBe(true);
+    expect(inPeriod("2026-09-30", "quarter", oct, 4)).toBe(false);
+  });
+  it("periodKpi follows the selected month and quarter", () => {
+    const settings = [
+      { employee_id: "A", target_year: 2026, period: "month", period_no: 3, amount: 900_000_000 },
+      { employee_id: "A", target_year: 2026, period: "quarter", period_no: 2, amount: 3_000_000_000 },
+    ];
+    expect(periodKpi(settings, "A", "month", oct, 0, 3)).toBe(900_000_000);
+    expect(periodKpi(settings, "A", "quarter", oct, 0, 2)).toBe(3_000_000_000);
+  });
+});
+
 describe("online sales and KPI rules", () => {
   it("parses formatted 1.000.000 into a numeric million", () => {
     expect(parseMoneyInput("1.000.000")).toBe(1_000_000);
