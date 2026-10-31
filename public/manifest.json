@@ -1,0 +1,17 @@
+{
+  "id": "/",
+  "name": "Doanh Số - Công Nợ Vietcasa",
+  "short_name": "Vietcasa DS-CN",
+  "description": "Báo cáo doanh số, KPI và công nợ Vietcasa.",
+  "lang": "vi",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#4b4b4d",
+  "background_color": "#ffffff",
+  "icons": [
+    { "src": "/logo192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/logo512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/logo512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

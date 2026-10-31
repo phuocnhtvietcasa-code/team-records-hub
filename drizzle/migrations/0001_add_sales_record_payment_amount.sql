@@ -1,0 +1,2 @@
+ALTER TABLE public.sales_records ADD COLUMN payment_amount numeric NOT NULL DEFAULT 0;
+COMMENT ON COLUMN public.sales_records.payment_amount IS 'User-entered payment amount; remaining debt is deposit minus payment_amount, forced to zero for thanh_toan_du.';

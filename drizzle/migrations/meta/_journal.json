@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1793167099061,
+      "tag": "0000_import_vietcasa_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793338327898,
+      "tag": "0001_add_sales_record_payment_amount",
+      "breakpoints": true
+    }
+  ]
+}
