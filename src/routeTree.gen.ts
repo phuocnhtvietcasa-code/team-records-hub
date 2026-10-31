@@ -10,33 +10,145 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AuthenticatedCaiDatRouteImport } from './routes/_authenticated/cai-dat'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedDashboardCongNoRouteImport } from './routes/_authenticated/dashboard-cong-no'
+import { Route as AuthenticatedDashboardDoanhSoRouteImport } from './routes/_authenticated/dashboard-doanh-so'
+import { Route as AuthenticatedNhanVienRouteImport } from './routes/_authenticated/nhan-vien'
+import { Route as AuthenticatedPhieuRouteImport } from './routes/_authenticated/phieu'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedCaiDatRoute = AuthenticatedCaiDatRouteImport.update({
+  id: '/cai-dat',
+  path: '/cai-dat',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedDashboardCongNoRoute =
+  AuthenticatedDashboardCongNoRouteImport.update({
+    id: '/dashboard-cong-no',
+    path: '/dashboard-cong-no',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDashboardDoanhSoRoute =
+  AuthenticatedDashboardDoanhSoRouteImport.update({
+    id: '/dashboard-doanh-so',
+    path: '/dashboard-doanh-so',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedNhanVienRoute = AuthenticatedNhanVienRouteImport.update({
+  id: '/nhan-vien',
+  path: '/nhan-vien',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPhieuRoute = AuthenticatedPhieuRouteImport.update({
+  id: '/phieu',
+  path: '/phieu',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/cai-dat': typeof AuthenticatedCaiDatRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dashboard-cong-no': typeof AuthenticatedDashboardCongNoRoute
+  '/dashboard-doanh-so': typeof AuthenticatedDashboardDoanhSoRoute
+  '/nhan-vien': typeof AuthenticatedNhanVienRoute
+  '/phieu': typeof AuthenticatedPhieuRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/cai-dat': typeof AuthenticatedCaiDatRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dashboard-cong-no': typeof AuthenticatedDashboardCongNoRoute
+  '/dashboard-doanh-so': typeof AuthenticatedDashboardDoanhSoRoute
+  '/nhan-vien': typeof AuthenticatedNhanVienRoute
+  '/phieu': typeof AuthenticatedPhieuRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/cai-dat': typeof AuthenticatedCaiDatRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/dashboard-cong-no': typeof AuthenticatedDashboardCongNoRoute
+  '/_authenticated/dashboard-doanh-so': typeof AuthenticatedDashboardDoanhSoRoute
+  '/_authenticated/nhan-vien': typeof AuthenticatedNhanVienRoute
+  '/_authenticated/phieu': typeof AuthenticatedPhieuRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/reset-password'
+    | '/cai-dat'
+    | '/dashboard'
+    | '/dashboard-cong-no'
+    | '/dashboard-doanh-so'
+    | '/nhan-vien'
+    | '/phieu'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth'
+    | '/reset-password'
+    | '/cai-dat'
+    | '/dashboard'
+    | '/dashboard-cong-no'
+    | '/dashboard-doanh-so'
+    | '/nhan-vien'
+    | '/phieu'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/auth'
+    | '/reset-password'
+    | '/_authenticated/cai-dat'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/dashboard-cong-no'
+    | '/_authenticated/dashboard-doanh-so'
+    | '/_authenticated/nhan-vien'
+    | '/_authenticated/phieu'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +160,98 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/cai-dat': {
+      id: '/_authenticated/cai-dat'
+      path: '/cai-dat'
+      fullPath: '/cai-dat'
+      preLoaderRoute: typeof AuthenticatedCaiDatRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard-cong-no': {
+      id: '/_authenticated/dashboard-cong-no'
+      path: '/dashboard-cong-no'
+      fullPath: '/dashboard-cong-no'
+      preLoaderRoute: typeof AuthenticatedDashboardCongNoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/dashboard-doanh-so': {
+      id: '/_authenticated/dashboard-doanh-so'
+      path: '/dashboard-doanh-so'
+      fullPath: '/dashboard-doanh-so'
+      preLoaderRoute: typeof AuthenticatedDashboardDoanhSoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/nhan-vien': {
+      id: '/_authenticated/nhan-vien'
+      path: '/nhan-vien'
+      fullPath: '/nhan-vien'
+      preLoaderRoute: typeof AuthenticatedNhanVienRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/phieu': {
+      id: '/_authenticated/phieu'
+      path: '/phieu'
+      fullPath: '/phieu'
+      preLoaderRoute: typeof AuthenticatedPhieuRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedCaiDatRoute: typeof AuthenticatedCaiDatRoute
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDashboardCongNoRoute: typeof AuthenticatedDashboardCongNoRoute
+  AuthenticatedDashboardDoanhSoRoute: typeof AuthenticatedDashboardDoanhSoRoute
+  AuthenticatedNhanVienRoute: typeof AuthenticatedNhanVienRoute
+  AuthenticatedPhieuRoute: typeof AuthenticatedPhieuRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedCaiDatRoute: AuthenticatedCaiDatRoute,
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDashboardCongNoRoute: AuthenticatedDashboardCongNoRoute,
+  AuthenticatedDashboardDoanhSoRoute: AuthenticatedDashboardDoanhSoRoute,
+  AuthenticatedNhanVienRoute: AuthenticatedNhanVienRoute,
+  AuthenticatedPhieuRoute: AuthenticatedPhieuRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
