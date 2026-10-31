@@ -8,8 +8,8 @@ import {
   DEBT_STATUS_LABELS,
   NATURE_LABELS,
   debtAmount,
-  companyRevenue,
   formatVND,
+  formCompanyNet,
   formEmployeeNet,
   remainingDebt,
   toISODate,
@@ -146,7 +146,7 @@ export function RecordForm({
 
       <div className="grid min-w-0 gap-3 rounded-lg bg-secondary p-3 text-sm sm:grid-cols-2">
         <Calc label="DT thuần nhân viên" value={formatVND(formEmployeeNet(amounts))} />
-        <Calc label="DT thuần công ty" value={formatVND(companyRevenue(amounts))} />
+        <Calc label="DT thuần công ty" value={formatVND(formCompanyNet(amounts))} />
         <Calc label="Công nợ" value={formatVND(debtAmount(amounts))} />
         <Calc label="Công nợ còn lại" value={formatVND(remainingDebt(amounts))} />
       </div>
