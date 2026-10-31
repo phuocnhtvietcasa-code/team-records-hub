@@ -85,11 +85,12 @@ export function monthlyKpi(targets: KpiTarget[], employeeId: string | null, year
   const annual = scoped.find((t) => t.period === "year");
   return annual ? annual.amount / 12 : fallback;
 }
-export function periodKpi(targets: KpiTarget[], employeeId: string | null, p: Period, today: Date, fallback = 0): number {
+export function periodKpi(targets: KpiTarget[], employeeId: string | null, p: Period, today: Date, fallback = 0, sub?: number | null): number {
   const year = today.getFullYear();
   const month = today.getMonth() + 1;
-  if (p === "week" || p === "month") return monthlyKpi(targets, employeeId, year, month, fallback) * (p === "week" ? 6 / 26 : 1);
-  const start = p === "quarter" ? Math.floor((month - 1) / 3) * 3 + 1 : 1;
+  if (p === "week") return monthlyKpi(targets, employeeId, year, month, fallback) * (6 / 26);
+  if (p === "month") return monthlyKpi(targets, employeeId, year, sub ?? month, fallback);
+  const start = p === "quarter" ? ((sub ?? Math.floor((month - 1) / 3) + 1) - 1) * 3 + 1 : 1;
   const count = p === "quarter" ? 3 : 12;
   return Array.from({ length: count }, (_, i) => monthlyKpi(targets, employeeId, year, start + i, fallback)).reduce((sum, n) => sum + n, 0);
 }
@@ -282,7 +283,8 @@ export function inPeriod(dateStr: string, p: Period, today: Date, sub?: number |
   if (!range) return true;
   const d = parseDate(dateStr);
   if (p === "week" && d.getDay() === 0) return false; // Tuần làm việc: Thứ 2 → Thứ 7, không tính Chủ nhật
-  const end = sub == null && p !== "quarter" && p !== "month" ? startOfDay(today) : range.end;
+  const t = startOfDay(today);
+  const end = p === "week" ? range.end : range.end > t ? t : range.end;
   return d >= range.start && d <= end;
 }
 
