@@ -94,8 +94,9 @@ export function periodKpi(targets: KpiTarget[], employeeId: string | null, p: Pe
   return Array.from({ length: count }, (_, i) => monthlyKpi(targets, employeeId, year, start + i, fallback)).reduce((sum, n) => sum + n, 0);
 }
 
+/** Chỉ Admin được Thêm/Sửa/Xóa trên toàn hệ thống. */
 export function canWriteRecords(role: string): boolean {
-  return role === "admin" || role === "staff";
+  return role === "admin";
 }
 
 export interface TeamEmployee {
@@ -103,16 +104,24 @@ export interface TeamEmployee {
   team: string;
   team_role: string;
 }
-/** Mirrors read scope for UI; database policies remain authoritative. */
+/** Dashboard scope: Admin/Quản lý xem toàn công ty; Nhân viên chỉ xem số liệu cá nhân. */
 export function readableEmployees<T extends TeamEmployee>(employees: T[], role: string, own: TeamEmployee | null | undefined): T[] {
   if (role === "admin" || role === "manager") return employees;
-  return employees.filter((e) => e.id === own?.id || (own?.team_role === "leader" && own.team.trim() !== "" && e.team === own.team));
+  return employees.filter((e) => e.id === own?.id);
+}
+/** Records list scope: Admin xem tất cả; Quản lý xem phiếu của mình và nhân viên cùng team; Nhân viên chỉ xem phiếu của mình. */
+export function recordScopeEmployees<T extends TeamEmployee>(employees: T[], role: string, own: TeamEmployee | null | undefined): T[] {
+  if (role === "admin") return employees;
+  if (role === "manager") {
+    return employees.filter((e) => e.id === own?.id || (own != null && own.team.trim() !== "" && e.team === own.team));
+  }
+  return employees.filter((e) => e.id === own?.id);
 }
 export function selectedEmployees<T extends { id: string }>(employees: T[], ids: string[] | null): T[] {
   return ids === null ? employees : employees.filter((e) => ids.includes(e.id));
 }
 export function canWriteEmployeeRecord(role: string, ownId: string | undefined, employeeId: string): boolean {
-  return role === "admin" || (role === "staff" && ownId === employeeId);
+  return role === "admin";
 }
 export const COST_FIELDS = [
   { key: "discount", label: "Chiết khấu bán hàng" },
