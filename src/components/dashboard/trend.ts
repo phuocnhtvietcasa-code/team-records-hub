@@ -2,10 +2,10 @@ import { formatDateVN, parseDate, weekDays, type Period } from "@/lib/finance";
 
 const DOW = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
-/** Group values over time; week view always shows T2..T7. */
-export function buildTrend<R extends { record_date: string }>(rows: R[], period: Period, today: Date, value: (r: R) => number) {
+/** Group values over time; week view always shows T2..T7 của tuần đang chọn. */
+export function buildTrend<R extends { record_date: string }>(rows: R[], period: Period, today: Date, value: (r: R) => number, sub?: number | null) {
   if (period === "week") {
-    const days = weekDays(today);
+    const days = weekDays(today, sub);
     return days.map((d) => ({
       label: `${DOW[parseDate(d).getDay()]} ${formatDateVN(d).slice(0, 5)}`,
       value: rows.filter((r) => r.record_date === d).reduce((s, r) => s + value(r), 0),
