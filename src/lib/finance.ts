@@ -86,7 +86,7 @@ export function monthlyKpi(targets: KpiTarget[], employeeId: string | null, year
   return annual ? annual.amount / 12 : fallback;
 }
 export function periodKpi(targets: KpiTarget[], employeeId: string | null, p: Period, today: Date, fallback = 0, sub?: number | null): number {
-  const year = today.getFullYear();
+  const year = p === "year" && sub != null ? sub : today.getFullYear();
   const month = today.getMonth() + 1;
   if (p === "week") return monthlyKpi(targets, employeeId, year, month, fallback) * (6 / 26);
   if (p === "month") return monthlyKpi(targets, employeeId, year, sub ?? month, fallback);
@@ -274,7 +274,10 @@ export function periodRange(p: Period, today: Date, sub?: number | null): Period
     const firstMonth = (q - 1) * 3;
     return { start: new Date(y, firstMonth, 1), end: new Date(y, firstMonth + 3, 0) };
   }
-  if (p === "year") return { start: new Date(y, 0, 1), end: t };
+  if (p === "year") {
+    if (sub == null) return { start: new Date(y, 0, 1), end: t };
+    return { start: new Date(sub, 0, 1), end: new Date(sub, 11, 31) };
+  }
   return null;
 }
 
@@ -289,8 +292,8 @@ export function inPeriod(dateStr: string, p: Period, today: Date, sub?: number |
   return d >= range.start && d <= end;
 }
 
-/** Hệ số tháng để quy đổi mục tiêu tháng sang kỳ đang lọc. */
-export function targetMonths(p: Period, today: Date): number {
+/** Hệ số tháng để quy đổi mục tiêu tháng sang kỳ đang lọc; `sub` = năm được chọn tường minh (đủ 12 tháng). */
+export function targetMonths(p: Period, today: Date, sub?: number | null): number {
   switch (p) {
     case "week":
       return 6 / 26;
@@ -298,6 +301,8 @@ export function targetMonths(p: Period, today: Date): number {
       return 1;
     case "quarter":
       return (today.getMonth() % 3) + 1;
+    case "year":
+      return sub == null || sub === today.getFullYear() ? today.getMonth() + 1 : 12;
     default:
       return today.getMonth() + 1;
   }

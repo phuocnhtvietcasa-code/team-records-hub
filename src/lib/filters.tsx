@@ -4,7 +4,7 @@ import type { Period } from "./finance";
 interface FilterState {
   employeeIds: string[] | null; // null = all readable employees; [] = none
   period: Period;
-  /** Tuần trong tháng / tháng trong năm / quý đang chọn (1-based); null = kỳ hiện tại. */
+  /** Tuần trong tháng / tháng trong năm / quý (1-based) hoặc năm đang chọn; null = kỳ hiện tại. */
   sub: number | null;
   setEmployeeIds: (v: string[] | null) => void;
   setPeriod: (p: Period) => void;

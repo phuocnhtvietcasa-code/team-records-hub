@@ -143,6 +143,33 @@ describe("selectable week/month/quarter ranges", () => {
   });
 });
 
+describe("selectable year range", () => {
+  const oct = new Date(2026, 9, 31); // Sat 31/10/2026
+  it("year sub picks the full selected year", () => {
+    expect(inPeriod("2025-01-01", "year", oct, 2025)).toBe(true);
+    expect(inPeriod("2025-12-31", "year", oct, 2025)).toBe(true);
+    expect(inPeriod("2026-01-01", "year", oct, 2025)).toBe(false);
+  });
+  it("current year without sub still caps at today", () => {
+    expect(inPeriod("2026-10-31", "year", oct)).toBe(true);
+    expect(inPeriod("2026-11-01", "year", oct)).toBe(false);
+    expect(inPeriod("2025-12-31", "year", oct)).toBe(false);
+  });
+  it("periodKpi uses the selected year's targets", () => {
+    const settings = [
+      { employee_id: "A", target_year: 2025, period: "year", period_no: 1, amount: 6_000_000_000 },
+      { employee_id: "A", target_year: 2026, period: "year", period_no: 1, amount: 8_000_000_000 },
+    ];
+    expect(periodKpi(settings, "A", "year", oct, 0, 2025)).toBeCloseTo(6_000_000_000);
+    expect(periodKpi(settings, "A", "year", oct, 0, 2026)).toBeCloseTo(8_000_000_000);
+  });
+  it("targetMonths: selected past year counts 12 months, current year counts elapsed months", () => {
+    expect(targetMonths("year", oct, 2025)).toBe(12);
+    expect(targetMonths("year", oct, 2026)).toBe(10);
+    expect(targetMonths("year", oct)).toBe(10);
+  });
+});
+
 describe("online sales and KPI rules", () => {
   it("parses formatted 1.000.000 into a numeric million", () => {
     expect(parseMoneyInput("1.000.000")).toBe(1_000_000);

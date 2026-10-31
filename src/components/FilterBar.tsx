@@ -44,9 +44,11 @@ export function FilterBar({ employees: employeesProp }: { employees?: Employee[]
         ? Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `Tháng ${i + 1}` }))
         : period === "quarter"
           ? QUARTER_LABELS.map((l, i) => ({ value: i + 1, label: l }))
-          : [];
+          : period === "year"
+            ? Array.from({ length: 5 }, (_, i) => { const y = today.getFullYear() - i; return { value: y, label: `Năm ${y}` }; })
+            : [];
   const subDefault =
-    period === "week" ? currentMonthWeek(today) : period === "month" ? today.getMonth() + 1 : period === "quarter" ? Math.floor(today.getMonth() / 3) + 1 : null;
+    period === "week" ? currentMonthWeek(today) : period === "month" ? today.getMonth() + 1 : period === "quarter" ? Math.floor(today.getMonth() / 3) + 1 : period === "year" ? today.getFullYear() : null;
 
   return (
     <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3 rounded-xl border bg-card p-3 shadow-card">
