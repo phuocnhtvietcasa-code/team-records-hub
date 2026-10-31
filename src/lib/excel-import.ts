@@ -9,7 +9,8 @@ export const EXCEL_COLUMNS = [
   ["accessories", "Tiền phụ kiện/dịch vụ"], ["vat", "Thuế GTGT"],
   ["kts_commission", "Hoa hồng KTS"], ["project_cost", "Chi phí công trình"],
   ["nature", "Tính chất"], ["due_date", "Hạn thanh toán"],
-  ["deposit", "Tiền cọc"], ["debt_status", "Trạng thái công nợ"],
+  ["deposit", "Tiền cọc"], ["payment_amount", "Số tiền thanh toán"],
+  ["debt_status", "Trạng thái công nợ"],
 ] as const;
 
 export function createSalesTemplate() {
@@ -84,7 +85,7 @@ export function parseSalesWorkbook(buffer: ArrayBuffer, employees: Pick<Employee
       const employee = matches[0];
       if (!identity || matches.length !== 1 || !employee) throw new Error("Nhân viên không tồn tại hoặc trùng tên; hãy dùng mã nhân viên");
       if (!text(values["customer"])) throw new Error("Khách hàng không được để trống");
-      const amounts = Object.fromEntries(["gross", "discount", "accessories", "vat", "kts_commission", "project_cost", "deposit"].map((key) => [key, moneyValue(values[key], key === "gross")]));
+      const amounts = Object.fromEntries(["gross", "discount", "accessories", "vat", "kts_commission", "project_cost", "deposit", "payment_amount"].map((key) => [key, moneyValue(values[key], key === "gross")]));
       records.push({
         voucher_no: voucher, employee_id: employee.id, customer: text(values["customer"]), project: text(values["project"]),
         record_date: dateValue(values["record_date"]), due_date: dateValue(values["due_date"]),
