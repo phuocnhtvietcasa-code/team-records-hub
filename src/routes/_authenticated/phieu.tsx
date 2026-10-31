@@ -209,7 +209,14 @@ export function PhieuPage() {
                       </td>
                       <td className="pr-3">{formatDateVN(r.record_date)}</td>
                       <td className="pr-3">
-                        <Button variant="link" className="h-auto p-0" aria-label={`Xem phiếu ${r.voucher_no}`} onClick={() => setEditing(r)}>{r.voucher_no}</Button>
+                        <Button
+                          variant="link"
+                          className="h-auto p-0"
+                          aria-label={`Xem phiếu ${r.voucher_no}`}
+                          onClick={() => setEditing(r)}
+                        >
+                          {r.voucher_no}
+                        </Button>
                       </td>
                       <td className="pr-3">{empMap.get(r.employee_id)?.full_name}</td>
                       <td className="pr-3">{r.customer}</td>
