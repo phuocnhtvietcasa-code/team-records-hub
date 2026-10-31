@@ -3,7 +3,7 @@ import * as XLSX from "xlsx";
 import { createSalesTemplate, EXCEL_COLUMNS, parseSalesWorkbook } from "./excel-import";
 
 const employees = [{ id: "employee-1", code: "NV01", full_name: "Nguyễn An" }];
-const valid = ["QA-EXCEL", "27/10/2026", "NV01", "Khách Excel", "Công trình A", 100000000, 1000000, 2000000, 3000000, 4000000, 5000000, "Công ty", "27/11/2026", 30000000, "Cọc 30%"];
+const valid = ["QA-EXCEL", "27/10/2026", "NV01", "Khách Excel", "Công trình A", 100000000, 1000000, 2000000, 3000000, 4000000, 5000000, "Công ty", "27/11/2026", 30000000, 10000000, "Cọc 30%"];
 function workbook(rows: unknown[][], type: "xlsx" | "biff8" = "xlsx"): ArrayBuffer {
   const book = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows), "Data");
@@ -20,13 +20,13 @@ describe("Excel sales import", () => {
     const sheet = template.Sheets[first];
     if (!sheet) throw new Error("Template sheet missing");
     expect(XLSX.utils.sheet_to_json(sheet, { header: 1 })[0]).toEqual(headers);
-    expect(EXCEL_COLUMNS.map(([key]) => key)).toEqual(["voucher_no", "record_date", "employee_id", "customer", "project", "gross", "discount", "accessories", "vat", "kts_commission", "project_cost", "nature", "due_date", "deposit", "debt_status"]);
+    expect(EXCEL_COLUMNS.map(([key]) => key)).toEqual(["voucher_no", "record_date", "employee_id", "customer", "project", "gross", "discount", "accessories", "vat", "kts_commission", "project_cost", "nature", "due_date", "deposit", "payment_amount", "debt_status"]);
   });
   it.each(["xlsx", "biff8"] as const)("parses %s from the first sheet into complete insert values", (type) => {
     expect(parseSalesWorkbook(workbook([headers, valid], type), employees)[0]).toEqual({
       voucher_no: "QA-EXCEL", record_date: "2026-10-27", employee_id: "employee-1", customer: "Khách Excel", project: "Công trình A",
       gross: 100000000, discount: 1000000, accessories: 2000000, vat: 3000000, kts_commission: 4000000, project_cost: 5000000,
-      nature: "cong_ty", due_date: "2026-11-27", deposit: 30000000, debt_status: "coc_30",
+      nature: "cong_ty", due_date: "2026-11-27", deposit: 30000000, payment_amount: 10000000, debt_status: "coc_30",
     });
   });
   it("rejects missing headers", () => {
@@ -37,10 +37,15 @@ describe("Excel sales import", () => {
     expect(() => parseSalesWorkbook(workbook([headers, valid]), employees, ["QA-EXCEL"])).toThrow("đã tồn tại");
   });
   it("rejects unknown employees and invalid dates, enums and amounts", () => {
-    for (const [column, value] of [[2, "Không tồn tại"], [1, "31/02/2026"], [5, -1], [5, "abc"], [11, "Sai"], [14, "Sai"]] as const) {
+    for (const [column, value] of [[2, "Không tồn tại"], [1, "31/02/2026"], [5, -1], [5, "abc"], [11, "Sai"], [15, "Sai"]] as const) {
       const row = [...valid]; row[column] = value;
       expect(() => parseSalesWorkbook(workbook([headers, row]), employees)).toThrow("Dòng 2");
     }
+  });
+  it("maps the payment column and defaults it to zero when blank", () => {
+    expect(parseSalesWorkbook(workbook([headers, valid]), employees)[0]?.payment_amount).toBe(10000000);
+    const blank = [...valid]; blank[14] = "";
+    expect(parseSalesWorkbook(workbook([headers, blank]), employees)[0]?.payment_amount).toBe(0);
   });
   it("accepts reordered headers, Excel dates and formatted VND", () => {
     const row = [...valid]; row[1] = 46322; row[5] = "100.000.000 đ";
