@@ -42,9 +42,9 @@ export const Route = createFileRoute("/_authenticated/phieu")({
   component: PhieuPage,
 });
 
-function PhieuPage() {
+export function PhieuPage() {
   const qc = useQueryClient();
-  const { canManage, canWrite, me, role } = useMe();
+  const { canManage, canWrite, isAdmin, me, role } = useMe();
   const { listFiltered: filtered, listEmployees, employees, empMap, today } = useFilteredRecords();
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<SalesRecord | null>(null);
@@ -209,7 +209,7 @@ function PhieuPage() {
                       </td>
                       <td className="pr-3">{formatDateVN(r.record_date)}</td>
                       <td className="pr-3">
-                        {writable(r) ? <Button variant="link" className="h-auto p-0" aria-label={`Sửa phiếu ${r.voucher_no}`} onClick={() => setEditing(r)}>{r.voucher_no}</Button> : <span className="font-medium">{r.voucher_no}</span>}
+                        <Button variant="link" className="h-auto p-0" aria-label={`Xem phiếu ${r.voucher_no}`} onClick={() => setEditing(r)}>{r.voucher_no}</Button>
                       </td>
                       <td className="pr-3">{empMap.get(r.employee_id)?.full_name}</td>
                       <td className="pr-3">{r.customer}</td>
@@ -239,7 +239,7 @@ function PhieuPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <Dialog open={!!editing && writable(editing)} onOpenChange={(o) => !o && setEditing(null)}>
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-auto">
           <DialogHeader><DialogTitle>Chi tiết phiếu {editing?.voucher_no}</DialogTitle></DialogHeader>
           {editing && (
@@ -248,6 +248,7 @@ function PhieuPage() {
               initial={editing}
               employees={canManage ? employees : formEmployees}
               lockEmployee={!canManage}
+              readOnly={!isAdmin}
               submitLabel="Lưu thay đổi"
               onSubmit={update}
               onDelete={() => remove(editing.id)}
