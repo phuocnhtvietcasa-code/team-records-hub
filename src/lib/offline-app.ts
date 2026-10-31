@@ -73,6 +73,7 @@ var view="doanh-so",period="month",sel=null,search="",modal=null;
 /* ===== Finance (mirrors src/lib/finance.ts) ===== */
 function netBefore(r){return r.gross-r.discount-r.accessories-r.vat-r.kts_commission-r.project_cost}
 function netRevenue(r){return netBefore(r)*(r.nature==="cong_ty"?0.5:1)}
+function formEmployeeNet(r){return (r.gross-r.discount-r.accessories-r.kts_commission-r.project_cost)*(r.nature==="cong_ty"?0.5:1)}
 function companyRevenue(r){return r.nature==="cong_ty"?netBefore(r)/2:0}
 function isFullyPaid(r){return r.debt_status==="thanh_toan_du"||r.debt_status==="thua_tien"}
 function outstanding(r){return isFullyPaid(r)?0:Math.max(r.gross-r.deposit,0)}
