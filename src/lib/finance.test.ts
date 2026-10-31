@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canWriteEmployeeRecord, companyNet, costBreakdown, kpiStatus, readableEmployees, selectedEmployees, canWriteRecords, companyRevenue, daysOwed, debtWarning, formatMoneyInput, monthlyKpi, netBeforeAllocation, netRevenue, outstanding, parseMoneyInput, periodKpi, remainingDebt } from "./finance";
+import { canWriteEmployeeRecord, companyNet, costBreakdown, debtAmount, kpiStatus, readableEmployees, recordScopeEmployees, selectedEmployees, canWriteRecords, companyRevenue, daysOwed, debtWarning, formatMoneyInput, monthlyKpi, netBeforeAllocation, netRevenue, outstanding, parseMoneyInput, periodKpi, remainingDebt } from "./finance";
 
 const base = {
   gross: 100_000_000,
@@ -17,14 +17,24 @@ const today = new Date(2026, 9, 25);
 describe("team, selection and cost rules", () => {
   const leader = { id: "L", team: "A", team_role: "leader" };
   const members = [leader, { id: "A1", team: "A", team_role: "member" }, { id: "B1", team: "B", team_role: "member" }];
-  it("leader defaults to all same-team employees, not another team", () => {
-    expect(readableEmployees(members, "staff", leader).map(e => e.id)).toEqual(["L", "A1"]);
+  it("staff dashboard shows only own employee, even for team leaders", () => {
+    expect(readableEmployees(members, "staff", leader).map(e => e.id)).toEqual(["L"]);
   });
   it("member sees only own employee", () => {
     expect(readableEmployees(members, "staff", members[1]).map(e => e.id)).toEqual(["A1"]);
   });
-  it("empty-team leader does not gain access to unassigned employees", () => {
-    expect(readableEmployees([{ ...leader, team: "" }, { id: "U", team: "", team_role: "member" }], "staff", { ...leader, team: "" }).map(e => e.id)).toEqual(["L"]);
+  it("admin and manager dashboards see the whole company", () => {
+    expect(readableEmployees(members, "admin", null).map(e => e.id)).toEqual(["L", "A1", "B1"]);
+    expect(readableEmployees(members, "manager", null).map(e => e.id)).toEqual(["L", "A1", "B1"]);
+  });
+  it("records list: admin sees all, manager sees own team, staff sees own", () => {
+    expect(recordScopeEmployees(members, "admin", null).map(e => e.id)).toEqual(["L", "A1", "B1"]);
+    expect(recordScopeEmployees(members, "manager", leader).map(e => e.id)).toEqual(["L", "A1"]);
+    expect(recordScopeEmployees(members, "staff", members[1]).map(e => e.id)).toEqual(["A1"]);
+  });
+  it("manager without a team sees only own records", () => {
+    expect(recordScopeEmployees(members, "manager", { id: "M", team: "", team_role: "member" }).map(e => e.id)).toEqual([]);
+    expect(recordScopeEmployees([...members, { id: "M", team: "", team_role: "member" }], "manager", { id: "M", team: "", team_role: "member" }).map(e => e.id)).toEqual(["M"]);
   });
   it("multi-select includes only selected employees without duplicates", () => {
     expect(selectedEmployees(members, ["L", "B1", "L"]).map(e => e.id)).toEqual(["L", "B1"]);
@@ -40,9 +50,9 @@ describe("team, selection and cost rules", () => {
   it("zero gross never gives an infinite cost percentage", () => {
     expect(costBreakdown([{ ...base, gross: 0 }]).items.map(i => i.pct)).toEqual([0, 0, 0, 0, 0]);
   });
-  it("leader cannot delete or edit a teammate record; manager stays read-only", () => {
+  it("only admin can delete or edit a record", () => {
     expect(canWriteEmployeeRecord("staff", "L", "A1")).toBe(false);
-    expect(canWriteEmployeeRecord("staff", "L", "L")).toBe(true);
+    expect(canWriteEmployeeRecord("staff", "L", "L")).toBe(false);
     expect(canWriteEmployeeRecord("manager", "L", "L")).toBe(false);
     expect(canWriteEmployeeRecord("admin", "L", "A1")).toBe(true);
   });
@@ -55,15 +65,19 @@ describe("finance rules", () => {
   it("net revenue for company is halved", () => {
     expect(netRevenue({ ...base, nature: "cong_ty" })).toBe(39_000_000);
   });
-  it("remaining debt = deposit - user-entered payment", () => {
-    expect(remainingDebt({ ...base, payment_amount: 10_000_000 })).toBe(20_000_000);
+  it("debt = gross - discount + vat", () => {
+    expect(debtAmount(base)).toBe(103_000_000);
+    expect(debtAmount({ ...base, discount: 0, vat: 0 })).toBe(100_000_000);
+  });
+  it("remaining debt = debt - deposit - user-entered payment", () => {
+    expect(remainingDebt({ ...base, payment_amount: 10_000_000 })).toBe(63_000_000);
   });
   it("fully paid overrides remaining debt to zero", () => {
     expect(remainingDebt({ ...base, payment_amount: 10_000_000, debt_status: "thanh_toan_du" })).toBe(0);
   });
   it("remaining debt preserves negative differences and defaults missing payments to zero", () => {
-    expect(remainingDebt({ ...base, payment_amount: 40_000_000 })).toBe(-10_000_000);
-    expect(remainingDebt(base)).toBe(30_000_000);
+    expect(remainingDebt({ ...base, payment_amount: 110_000_000 })).toBe(-37_000_000);
+    expect(remainingDebt(base)).toBe(73_000_000);
   });
   it("existing dashboard outstanding calculation stays unchanged", () => {
     expect(outstanding(base)).toBe(70_000_000);
@@ -95,16 +109,52 @@ describe("week = Monday to Saturday", () => {
   it("weekDays lists Mon..Sat", () => expect(weekDays(wed)).toEqual(["2026-10-19","2026-10-20","2026-10-21","2026-10-22","2026-10-23","2026-10-24"]));
 });
 
+describe("selectable week/month/quarter ranges", () => {
+  const oct = new Date(2026, 9, 31); // Sat 31/10/2026
+  it("week sub 1 covers days 1-7 of the month, still skipping Sunday", () => {
+    expect(inPeriod("2026-10-01", "week", oct, 1)).toBe(true);
+    expect(inPeriod("2026-10-04", "week", oct, 1)).toBe(false); // Chủ nhật
+    expect(inPeriod("2026-10-08", "week", oct, 1)).toBe(false);
+    expect(inPeriod("2026-10-08", "week", oct, 2)).toBe(true);
+  });
+  it("last week of month ends on the last day", () => {
+    expect(inPeriod("2026-10-31", "week", oct, 5)).toBe(true);
+    expect(inPeriod("2026-10-21", "week", oct, 5)).toBe(false);
+  });
+  it("month sub picks that month of the current year", () => {
+    expect(inPeriod("2026-03-15", "month", oct, 3)).toBe(true);
+    expect(inPeriod("2026-10-15", "month", oct, 3)).toBe(false);
+    expect(inPeriod("2025-03-15", "month", oct, 3)).toBe(false);
+  });
+  it("quarter sub uses static ranges Q1..Q4", () => {
+    expect(inPeriod("2026-01-01", "quarter", oct, 1)).toBe(true);
+    expect(inPeriod("2026-03-31", "quarter", oct, 1)).toBe(true);
+    expect(inPeriod("2026-04-01", "quarter", oct, 1)).toBe(false);
+    expect(inPeriod("2026-12-31", "quarter", oct, 4)).toBe(true);
+    expect(inPeriod("2026-09-30", "quarter", oct, 4)).toBe(false);
+  });
+  it("periodKpi follows the selected month and quarter", () => {
+    const settings = [
+      { employee_id: "A", target_year: 2026, period: "month", period_no: 3, amount: 900_000_000 },
+      { employee_id: "A", target_year: 2026, period: "quarter", period_no: 2, amount: 3_000_000_000 },
+    ];
+    expect(periodKpi(settings, "A", "month", oct, 0, 3)).toBe(900_000_000);
+    expect(periodKpi(settings, "A", "quarter", oct, 0, 2)).toBe(3_000_000_000);
+  });
+});
+
 describe("online sales and KPI rules", () => {
   it("parses formatted 1.000.000 into a numeric million", () => {
     expect(parseMoneyInput("1.000.000")).toBe(1_000_000);
     expect(formatMoneyInput("1000000")).toBe("1.000.000");
     expect(parseMoneyInput("")).toBe(0);
   });
-  it("manager cannot write records", () => expect(canWriteRecords("manager")).toBe(false));
-  it("admin and staff retain record writes", () => {
+  it("manager and staff cannot write records", () => {
+    expect(canWriteRecords("manager")).toBe(false);
+    expect(canWriteRecords("staff")).toBe(false);
+  });
+  it("only admin retains record writes", () => {
     expect(canWriteRecords("admin")).toBe(true);
-    expect(canWriteRecords("staff")).toBe(true);
   });
   it("splits company net exactly equally without using gross", () => {
     const r = { ...base, nature: "cong_ty" };

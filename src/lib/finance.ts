@@ -85,17 +85,19 @@ export function monthlyKpi(targets: KpiTarget[], employeeId: string | null, year
   const annual = scoped.find((t) => t.period === "year");
   return annual ? annual.amount / 12 : fallback;
 }
-export function periodKpi(targets: KpiTarget[], employeeId: string | null, p: Period, today: Date, fallback = 0): number {
+export function periodKpi(targets: KpiTarget[], employeeId: string | null, p: Period, today: Date, fallback = 0, sub?: number | null): number {
   const year = today.getFullYear();
   const month = today.getMonth() + 1;
-  if (p === "week" || p === "month") return monthlyKpi(targets, employeeId, year, month, fallback) * (p === "week" ? 6 / 26 : 1);
-  const start = p === "quarter" ? Math.floor((month - 1) / 3) * 3 + 1 : 1;
+  if (p === "week") return monthlyKpi(targets, employeeId, year, month, fallback) * (6 / 26);
+  if (p === "month") return monthlyKpi(targets, employeeId, year, sub ?? month, fallback);
+  const start = p === "quarter" ? ((sub ?? Math.floor((month - 1) / 3) + 1) - 1) * 3 + 1 : 1;
   const count = p === "quarter" ? 3 : 12;
   return Array.from({ length: count }, (_, i) => monthlyKpi(targets, employeeId, year, start + i, fallback)).reduce((sum, n) => sum + n, 0);
 }
 
+/** Chỉ Admin được Thêm/Sửa/Xóa trên toàn hệ thống. */
 export function canWriteRecords(role: string): boolean {
-  return role === "admin" || role === "staff";
+  return role === "admin";
 }
 
 export interface TeamEmployee {
@@ -103,16 +105,24 @@ export interface TeamEmployee {
   team: string;
   team_role: string;
 }
-/** Mirrors read scope for UI; database policies remain authoritative. */
+/** Dashboard scope: Admin/Quản lý xem toàn công ty; Nhân viên chỉ xem số liệu cá nhân. */
 export function readableEmployees<T extends TeamEmployee>(employees: T[], role: string, own: TeamEmployee | null | undefined): T[] {
   if (role === "admin" || role === "manager") return employees;
-  return employees.filter((e) => e.id === own?.id || (own?.team_role === "leader" && own.team.trim() !== "" && e.team === own.team));
+  return employees.filter((e) => e.id === own?.id);
+}
+/** Records list scope: Admin xem tất cả; Quản lý xem phiếu của mình và nhân viên cùng team; Nhân viên chỉ xem phiếu của mình. */
+export function recordScopeEmployees<T extends TeamEmployee>(employees: T[], role: string, own: TeamEmployee | null | undefined): T[] {
+  if (role === "admin") return employees;
+  if (role === "manager") {
+    return employees.filter((e) => e.id === own?.id || (own != null && own.team.trim() !== "" && e.team === own.team));
+  }
+  return employees.filter((e) => e.id === own?.id);
 }
 export function selectedEmployees<T extends { id: string }>(employees: T[], ids: string[] | null): T[] {
   return ids === null ? employees : employees.filter((e) => ids.includes(e.id));
 }
 export function canWriteEmployeeRecord(role: string, ownId: string | undefined, employeeId: string): boolean {
-  return role === "admin" || (role === "staff" && ownId === employeeId);
+  return role === "admin";
 }
 export const COST_FIELDS = [
   { key: "discount", label: "Chiết khấu bán hàng" },
@@ -130,14 +140,14 @@ export function costBreakdown(records: RecordAmounts[]) {
   return { gross, items, total: items.reduce((sum, item) => sum + item.amount, 0) };
 }
 
-/** Công nợ = Doanh số tổng. */
-export function debtAmount(r: Pick<RecordAmounts, "gross">): number {
-  return r.gross;
+/** Công nợ = Doanh số tổng − Chiết khấu bán hàng + Thuế GTGT. */
+export function debtAmount(r: Pick<RecordAmounts, "gross" | "discount" | "vat">): number {
+  return r.gross - r.discount + r.vat;
 }
 
-/** Công nợ còn lại = Tiền cọc − Số tiền thanh toán; thanh toán đủ luôn bằng 0. */
-export function remainingDebt(r: Pick<RecordAmounts, "deposit" | "payment_amount" | "debt_status">): number {
-  return r.debt_status === "thanh_toan_du" ? 0 : r.deposit - (r.payment_amount ?? 0);
+/** Công nợ còn lại = Công nợ − Tiền cọc − Số tiền thanh toán; thanh toán đủ luôn bằng 0. */
+export function remainingDebt(r: Pick<RecordAmounts, "gross" | "discount" | "vat" | "deposit" | "payment_amount" | "debt_status">): number {
+  return r.debt_status === "thanh_toan_du" ? 0 : debtAmount(r) - r.deposit - (r.payment_amount ?? 0);
 }
 
 export function grossPercentage(amount: number, gross: number): number {
@@ -148,10 +158,10 @@ export function isFullyPaid(r: Pick<RecordAmounts, "debt_status">): boolean {
   return r.debt_status === "thanh_toan_du" || r.debt_status === "thua_tien";
 }
 
-/** Số tiền còn phải thu thực tế (không âm, 0 nếu đã thanh toán đủ). */
+/** Số tiền còn phải thu thực tế (không âm, 0 nếu đã thanh toán đủ). Giữ nguyên công thức gốc, tách biệt khỏi Công nợ còn lại của form. */
 export function outstanding(r: Pick<RecordAmounts, "gross" | "deposit" | "debt_status">): number {
   if (isFullyPaid(r)) return 0;
-  return Math.max(debtAmount(r) - r.deposit, 0);
+  return Math.max(r.gross - r.deposit, 0);
 }
 
 export function collected(r: Pick<RecordAmounts, "gross" | "deposit" | "debt_status">): number {
@@ -224,16 +234,59 @@ export function periodStart(p: Period, today: Date): Date | null {
   }
 }
 
-export function inPeriod(dateStr: string, p: Period, today: Date): boolean {
-  const s = periodStart(p, today);
-  if (!s) return true;
-  const d = parseDate(dateStr);
+export interface PeriodRange {
+  start: Date;
+  end: Date;
+}
+
+/** Số tuần trong tháng (mỗi tuần 7 ngày: 1–7, 8–14, 15–21, 22–hết tháng). */
+export function monthWeekCount(today: Date): number {
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  return Math.ceil(lastDay / 7);
+}
+
+/** Tuần (1-based) của ngày `today` trong tháng. */
+export function currentMonthWeek(today: Date): number {
+  return Math.ceil(today.getDate() / 7);
+}
+
+/** Khoảng ngày của kỳ đang chọn; `sub` = tuần trong tháng / tháng trong năm / quý (1-based), null = kỳ hiện tại. */
+export function periodRange(p: Period, today: Date, sub?: number | null): PeriodRange | null {
+  const t = startOfDay(today);
+  const y = t.getFullYear();
   if (p === "week") {
-    // Tuần làm việc: Thứ 2 → Thứ 7, không tính Chủ nhật
-    const sat = new Date(s.getTime() + 5 * DAY);
-    return d >= s && d <= sat && d.getDay() !== 0;
+    if (sub == null) {
+      const dow = (t.getDay() + 6) % 7;
+      const mon = new Date(t.getTime() - dow * DAY);
+      return { start: mon, end: new Date(mon.getTime() + 5 * DAY) };
+    }
+    const first = (sub - 1) * 7 + 1;
+    const lastDay = new Date(y, t.getMonth() + 1, 0).getDate();
+    const last = Math.min(sub * 7, lastDay);
+    return { start: new Date(y, t.getMonth(), first), end: new Date(y, t.getMonth(), last) };
   }
-  return d >= s && d <= startOfDay(today);
+  if (p === "month") {
+    const m = sub == null ? t.getMonth() : sub - 1;
+    return { start: new Date(y, m, 1), end: new Date(y, m + 1, 0) };
+  }
+  if (p === "quarter") {
+    const q = sub == null ? Math.floor(t.getMonth() / 3) + 1 : sub;
+    const firstMonth = (q - 1) * 3;
+    return { start: new Date(y, firstMonth, 1), end: new Date(y, firstMonth + 3, 0) };
+  }
+  if (p === "year") return { start: new Date(y, 0, 1), end: t };
+  return null;
+}
+
+export function inPeriod(dateStr: string, p: Period, today: Date, sub?: number | null): boolean {
+  const range = periodRange(p, today, sub);
+  if (!range) return true;
+  const d = parseDate(dateStr);
+  if (p === "week" && d.getDay() === 0) return false; // Tuần làm việc: Thứ 2 → Thứ 7, không tính Chủ nhật
+  // Kỳ hiện tại (sub = null) chỉ tính đến hôm nay; kỳ được chọn tường minh dùng trọn khoảng ngày của kỳ.
+  const t = startOfDay(today);
+  const end = sub == null && p !== "week" && range.end > t ? t : range.end;
+  return d >= range.start && d <= end;
 }
 
 /** Hệ số tháng để quy đổi mục tiêu tháng sang kỳ đang lọc. */
@@ -258,14 +311,17 @@ export function formatDateVN(s: string): string {
   return `${d}/${m}/${y}`;
 }
 
-/** 6 ngày làm việc (T2..T7) của tuần chứa `today`, dạng yyyy-mm-dd. */
-export function weekDays(today: Date): string[] {
-  const s = periodStart("week", today);
-  if (!s) return [];
-  return Array.from({ length: 6 }, (_, i) => {
-    const d = new Date(s.getTime() + i * DAY);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  });
+/** Các ngày làm việc (bỏ Chủ nhật) của tuần đang chọn, dạng yyyy-mm-dd. */
+export function weekDays(today: Date, sub?: number | null): string[] {
+  const range = periodRange("week", today, sub);
+  if (!range) return [];
+  const days: string[] = [];
+  for (let t = range.start.getTime(); t <= range.end.getTime(); t += DAY) {
+    const d = new Date(t);
+    if (d.getDay() === 0) continue;
+    days.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+  }
+  return days;
 }
 
 export type AgingBucket = "0-30" | "31-60" | ">60";

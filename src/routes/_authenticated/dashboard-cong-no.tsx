@@ -1,10 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AlertTriangle, CheckCircle2, Clock, Wallet } from "lucide-react";
 import { AnimatedNumber, percentNumber, useChartAnimation } from "@/components/dashboard/animation";
 import { useFilters } from "@/lib/filters";
 import { useFilteredRecords } from "@/lib/use-filtered";
+import { useMe, type SalesRecord } from "@/lib/data";
+import { supabase } from "@/integrations/supabase/client";
+import { RecordForm, type FormValues } from "@/components/RecordForm";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { agingBucket, collected, daysOwed, debtWarning, formatDateVN, formatVND, outstanding, PERIOD_LABELS } from "@/lib/finance";
 import { shortMoney } from "@/components/dashboard/ui";
 import { DashboardFrame, DashboardHero, DashboardRing, REVENUE_COLORS, RevenueMetric, RevenueProgress, RevenueSection, Sparkline } from "@/components/dashboard/revenue-ui";
@@ -28,8 +35,24 @@ export const Route = createFileRoute("/_authenticated/dashboard-cong-no")({
 
 function DebtDashboard() {
   const animation = useChartAnimation();
+  const qc = useQueryClient();
   const { filtered, scope, employees, empMap, today, loading } = useFilteredRecords();
-  const { period } = useFilters();
+  const { period, sub } = useFilters();
+  const { isAdmin } = useMe();
+  const [detail, setDetail] = useState<SalesRecord | null>(null);
+
+  async function update(v: FormValues) {
+    if (!detail || !isAdmin) return false;
+    const { error } = await supabase.from("sales_records").update(v).eq("id", detail.id);
+    if (error) {
+      toast.error(error.message);
+      return false;
+    }
+    toast.success("Đã cập nhật phiếu");
+    setDetail(null);
+    qc.invalidateQueries({ queryKey: ["records"] });
+    return true;
+  }
 
   const s = useMemo(() => {
     const buckets = { safe: 0, soon: 0, overdue: 0 };
@@ -68,11 +91,11 @@ function DebtDashboard() {
   ];
 
   const display = useMemo(() => ({
-    debt: buildTrend(filtered, period, today, outstanding),
-    paid: buildTrend(filtered, period, today, collected),
-    overdue: buildTrend(filtered, period, today, (r) => debtWarning(r, today) === "overdue" ? outstanding(r) : 0),
-    soon: buildTrend(filtered, period, today, (r) => debtWarning(r, today) === "soon" ? outstanding(r) : 0),
-  }), [filtered, period, today]);
+    debt: buildTrend(filtered, period, today, outstanding, sub),
+    paid: buildTrend(filtered, period, today, collected, sub),
+    overdue: buildTrend(filtered, period, today, (r) => debtWarning(r, today) === "overdue" ? outstanding(r) : 0, sub),
+    soon: buildTrend(filtered, period, today, (r) => debtWarning(r, today) === "soon" ? outstanding(r) : 0, sub),
+  }), [filtered, period, sub, today]);
   const total = s.debt + s.paid;
   const paidPct = total > 0 ? s.paid / total * 100 : 0;
   const scopeLabel = scope.length === 1 ? scope[0]?.full_name : `${scope.length} nhân viên`;
@@ -99,10 +122,16 @@ function DebtDashboard() {
         <RevenueSection title="Đã thu vs Còn nợ theo nhân viên"><div className="h-72"><ResponsiveContainer width="100%" height="100%"><BarChart data={s.perEmp} margin={{ top: 12, right: 0, left: -14, bottom: 0 }}><CartesianGrid strokeDasharray="3 4" stroke="var(--border)" vertical={false} /><XAxis dataKey="name" fontSize={11} tickLine={false} axisLine={false} /><YAxis tickFormatter={shortMoney} fontSize={10} tickLine={false} axisLine={false} />{chartTooltip}<Legend wrapperStyle={{ fontSize: 11 }} /><Bar {...animation} dataKey="collected" stackId="a" name="Đã thu" fill={REVENUE_COLORS[1]} maxBarSize={48} /><Bar {...animation} dataKey="debt" stackId="a" name="Còn nợ" fill={REVENUE_COLORS[0]} maxBarSize={48} radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></div></RevenueSection>
         <DebtDetails records={filtered} employees={employees} empMap={empMap} />
         <RevenueSection title={`Cảnh báo công nợ (${s.alerts.length})`} aside={<Clock className="size-4 text-revenue-gold" />}>
-          <ul className="max-h-[32rem] divide-y overflow-y-auto pr-1">{s.alerts.map((r) => { const w = debtWarning(r, today); const amount = outstanding(r); return <li key={r.id} className="grid gap-4 py-5 lg:grid-cols-[1.2fr_1fr_1fr] lg:items-center"><div className="min-w-0"><p className="break-words text-sm font-semibold">{r.voucher_no}</p><p className="mt-2 break-words text-xs text-muted-foreground">{r.customer || "Chưa có khách hàng"} · {empMap.get(r.employee_id)?.full_name}</p></div><div><span className={cn("inline-block rounded-full px-3 py-1 text-[10px] font-medium", w === "overdue" ? "bg-destructive/10 text-destructive" : "bg-revenue-gold/15 text-warning-foreground")}>{w === "overdue" ? "Quá hạn" : "Sắp đến hạn"} · {formatDateVN(r.due_date)}</span><p className="mt-2 text-[10px] text-muted-foreground">{daysOwed(r, today)} ngày nợ</p></div><div><p className="mb-3 text-sm font-semibold tabular-nums lg:text-right"><AnimatedNumber value={amount} /></p><RevenueProgress pct={r.gross > 0 ? amount / r.gross * 100 : 0} color={w === "overdue" ? "var(--destructive)" : REVENUE_COLORS[3]} label={`Còn nợ ${r.voucher_no}`} /></div></li>; })}</ul>
+          <ul className="max-h-[32rem] divide-y overflow-y-auto pr-1">{s.alerts.map((r) => { const w = debtWarning(r, today); const amount = outstanding(r); return <li key={r.id} className="grid gap-4 py-5 lg:grid-cols-[1.2fr_1fr_1fr] lg:items-center"><div className="min-w-0"><Button type="button" variant="link" className="h-auto break-words p-0 text-sm font-semibold" aria-label={`Xem phiếu ${r.voucher_no}`} onClick={() => setDetail(r)}>{r.voucher_no}</Button><p className="mt-2 break-words text-xs text-muted-foreground">{r.customer || "Chưa có khách hàng"} · {empMap.get(r.employee_id)?.full_name}</p></div><div><span className={cn("inline-block rounded-full px-3 py-1 text-[10px] font-medium", w === "overdue" ? "bg-destructive/10 text-destructive" : "bg-revenue-gold/15 text-warning-foreground")}>{w === "overdue" ? "Quá hạn" : "Sắp đến hạn"} · {formatDateVN(r.due_date)}</span><p className="mt-2 text-[10px] text-muted-foreground">{daysOwed(r, today)} ngày nợ</p></div><div><p className="mb-3 text-sm font-semibold tabular-nums lg:text-right"><AnimatedNumber value={amount} /></p><RevenueProgress pct={r.gross > 0 ? amount / r.gross * 100 : 0} color={w === "overdue" ? "var(--destructive)" : REVENUE_COLORS[3]} label={`Còn nợ ${r.voucher_no}`} /></div></li>; })}</ul>
           {s.alerts.length === 0 && <p className="py-6 text-center text-xs text-muted-foreground">Không có khoản nợ cần cảnh báo.</p>}
         </RevenueSection>
       </>}
+      <Dialog open={detail !== null} onOpenChange={(open) => { if (!open) setDetail(null); }}>
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-auto">
+          <DialogHeader><DialogTitle>Chi tiết phiếu {detail?.voucher_no}</DialogTitle><DialogDescription>{isAdmin ? "Xem và cập nhật thông tin phiếu." : "Thông tin doanh số và công nợ của phiếu."}</DialogDescription></DialogHeader>
+          {detail && <RecordForm key={detail.id} initial={detail} employees={employees} lockEmployee={!isAdmin} readOnly={!isAdmin} submitLabel="Lưu thay đổi" onSubmit={update} />}
+        </DialogContent>
+      </Dialog>
     </DashboardFrame>
   );
 }

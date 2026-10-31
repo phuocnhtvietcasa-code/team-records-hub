@@ -22,6 +22,13 @@
       "when": 1793421630591,
       "tag": "0002_noop_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793425890083,
+      "tag": "0003_sales_records_admin_only_write",
+      "breakpoints": true
     }
   ]
 }

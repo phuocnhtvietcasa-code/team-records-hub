@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useFilteredRecords } from "@/lib/use-filtered";
-import { companyNet, costBreakdown, formatVND, kpiStatus, monthlyKpi, netRevenue, periodKpi, PERIOD_LABELS } from "@/lib/finance";
+import { companyNet, companyRevenue, costBreakdown, formatVND, kpiStatus, monthlyKpi, netRevenue, periodKpi, PERIOD_LABELS } from "@/lib/finance";
 import { shortMoney } from "@/components/dashboard/ui";
 import { DashboardFrame, DashboardHero, DashboardRing, COST_COLORS, KPI_STATUS_COLOR, KpiStatusBadge, REVENUE_COLORS, RevenueMetric, RevenueProgress, RevenueSection, Sparkline, TrendBadge } from "@/components/dashboard/revenue-ui";
 import { buildTrend } from "@/components/dashboard/trend";
@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/dashboard-doanh-so")({
 function SalesDashboard() {
   const animation = useChartAnimation();
   const { filtered, scope, today, loading } = useFilteredRecords();
-  const { employeeIds, period } = useFilters();
+  const { employeeIds, period, sub } = useFilters();
   const { canManage } = useMe();
   const { data: targets = [], isLoading: targetsLoading, isError: targetsError } = useKpiTargets();
   const { data: allRecords = [] } = useRecords();
@@ -44,17 +44,17 @@ function SalesDashboard() {
   const s = useMemo(() => {
     const credit = companyView ? companyNet : netRevenue;
     const sales = filtered.reduce((a, r) => a + credit(r), 0);
-    const target = companyView ? periodKpi(targets, null, period, today) : scope.reduce((a, e) => a + periodKpi(targets, e.id, period, today, e.monthly_target), 0);
+    const target = companyView ? periodKpi(targets, null, period, today, 0, sub) : scope.reduce((a, e) => a + periodKpi(targets, e.id, period, today, e.monthly_target, sub), 0);
     const perEmp = scope
       .map((e) => {
         const rs = filtered.filter((r) => r.employee_id === e.id);
         const sales = rs.reduce((a, r) => a + netRevenue(r), 0);
-        const target = periodKpi(targets, e.id, period, today, e.monthly_target);
+        const target = periodKpi(targets, e.id, period, today, e.monthly_target, sub);
         return { name: e.full_name.split(" ").slice(-2).join(" "), full: e.full_name, sales, target, count: rs.length, pct: target > 0 ? (sales / target) * 100 : 0 };
       })
       .sort((a, b) => b.sales - a.sales);
-    return { sales, target, perEmp, trend: buildTrend(filtered, period, today, credit) };
-  }, [filtered, scope, period, today, targets, companyView]);
+    return { sales, target, perEmp, trend: buildTrend(filtered, period, today, credit, sub) };
+  }, [filtered, scope, period, sub, today, targets, companyView]);
 
   const annual = useMemo(() => {
     const ids = new Set(scope.map((e) => e.id));
@@ -75,20 +75,22 @@ function SalesDashboard() {
   const status = kpiStatus(pct);
 
   const display = useMemo(() => {
-    const grossTrend = buildTrend(filtered, period, today, (r) => r.gross);
-    const countTrend = buildTrend(filtered, period, today, () => 1);
+    const grossTrend = buildTrend(filtered, period, today, (r) => r.gross, sub);
+    const countTrend = buildTrend(filtered, period, today, () => 1, sub);
     const trend = grossTrend.map((point) => ({ label: point.label, gross: point.value, net: s.trend.find((p) => p.label === point.label)?.value ?? 0 }));
     const group = (key: "customer" | "project" | "nature") => {
       const totals = new Map<string, number>();
       for (const record of filtered) {
         const name = key === "nature" ? NATURE_LABELS[record.nature as keyof typeof NATURE_LABELS] ?? record.nature : record[key].trim();
         const label = name || "Chưa phân loại";
-        totals.set(label, (totals.get(label) ?? 0) + record.gross);
+        // Công trình/Khách hàng: tổng DT thuần nhân viên + DT thuần công ty; loại phiếu giữ doanh số gốc.
+        const amount = key === "nature" ? record.gross : netRevenue(record) + companyRevenue(record);
+        totals.set(label, (totals.get(label) ?? 0) + amount);
       }
       return [...totals].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
     };
     return { grossTrend, countTrend, trend, customers: group("customer"), projects: group("project"), groups: group("nature") };
-  }, [filtered, period, today, s.trend]);
+  }, [filtered, period, sub, today, s.trend]);
   const scopeLabel = companyView ? "Tổng công ty" : scope.length === 1 ? scope[0]?.full_name : `${scope.length} nhân viên`;
   const netLabel = companyView ? "DT thuần Công ty" : "DT thuần nhân viên";
 
@@ -137,7 +139,7 @@ function SalesDashboard() {
             <ul className="mt-4 space-y-4">{display.groups.map((g, i) => <li key={g.name} className="flex items-center justify-between gap-3 text-xs"><LegendDot label={g.name} color={(REVENUE_COLORS[i % REVENUE_COLORS.length] ?? REVENUE_COLORS[0])} /><span className="shrink-0 font-semibold">{shortMoney(g.value)} <span className="ml-2 font-normal text-muted-foreground">{(costs.gross > 0 ? g.value / costs.gross * 100 : 0).toFixed(1)}%</span></span></li>)}</ul>
           </RevenueSection>
         </div>
-        <div className="grid gap-5 lg:grid-cols-2"><RevenueSection title="Doanh số theo công trình"><RankingList rows={display.projects} total={costs.gross} colors={[REVENUE_COLORS[0], REVENUE_COLORS[2]]} /></RevenueSection><RevenueSection title="Doanh số theo khách hàng"><RankingList rows={display.customers} total={costs.gross} colors={[REVENUE_COLORS[1], REVENUE_COLORS[4]]} /></RevenueSection></div>
+        <div className="grid gap-5 lg:grid-cols-2"><RevenueSection title="Doanh số theo công trình"><RankingList rows={display.projects} total={display.projects.reduce((a, r) => a + r.value, 0)} colors={[REVENUE_COLORS[0], REVENUE_COLORS[2]]} /></RevenueSection><RevenueSection title="Doanh số theo khách hàng"><RankingList rows={display.customers} total={display.customers.reduce((a, r) => a + r.value, 0)} colors={[REVENUE_COLORS[1], REVENUE_COLORS[4]]} /></RevenueSection></div>
 
         <RevenueSection title="Xếp hạng nhân viên" aside={<Trophy className="size-4 text-revenue-gold" />}>
           <ul className="divide-y">{s.perEmp.map((e, i) => <li key={e.full} className="grid gap-4 py-4 sm:grid-cols-[1fr_1fr] lg:grid-cols-[1.2fr_1fr_1fr] lg:items-center"><div className="flex min-w-0 items-center gap-3"><span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-semibold", i === 0 ? "bg-revenue/10 text-revenue" : "bg-muted text-muted-foreground")}>{String(i + 1).padStart(2, "0")}</span><div className="min-w-0"><p className="break-words text-xs font-semibold">{e.full}</p><p className="mt-1 text-[10px] text-muted-foreground">{e.count} phiếu · Mục tiêu {formatVND(e.target)}</p></div></div><p className="text-sm font-semibold tabular-nums sm:text-right">{formatVND(e.sales)}</p><div className="flex flex-wrap items-center justify-end gap-3 sm:col-span-2 lg:col-span-1"><div className="min-w-16 flex-1"><RevenueProgress pct={e.pct} color={e.target > 0 ? KPI_STATUS_COLOR[kpiStatus(e.pct)] : "var(--muted)"} label={`KPI ${e.full}`} /></div><span className="w-12 text-right text-xs font-semibold tabular-nums" style={e.target > 0 ? { color: KPI_STATUS_COLOR[kpiStatus(e.pct)] } : undefined}>{e.target > 0 ? `${e.pct.toFixed(0)}%` : "—"}</span><KpiStatusBadge pct={e.pct} hasValue={e.target > 0} /></div></li>)}</ul>
