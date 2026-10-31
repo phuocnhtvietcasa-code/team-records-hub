@@ -62,6 +62,11 @@ describe("finance rules", () => {
   it("net revenue for individual keeps full amount", () => {
     expect(netRevenue(base)).toBe(78_000_000);
   });
+  it("form employee net skips VAT while every other component stays", () => {
+    expect(formEmployeeNet(base)).toBe(86_000_000);
+    expect(formEmployeeNet({ ...base, nature: "cong_ty" })).toBe(43_000_000);
+    expect(formEmployeeNet({ ...base, vat: 0 })).toBe(netRevenue(base));
+  });
   it("net revenue for company is halved", () => {
     expect(netRevenue({ ...base, nature: "cong_ty" })).toBe(39_000_000);
   });

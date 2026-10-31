@@ -218,7 +218,7 @@ function recModal(){
 function recCalc(){
   var el=document.getElementById("r-calc");if(!el)return;
   var r={gross:moneyVal("r-gross"),discount:moneyVal("r-discount"),accessories:moneyVal("r-accessories"),vat:moneyVal("r-vat"),kts_commission:moneyVal("r-kts"),project_cost:moneyVal("r-cost"),nature:document.getElementById("r-nature").value,deposit:moneyVal("r-deposit"),debt_status:document.getElementById("r-status").value};
-  el.innerHTML="<div>DT thuần nhân viên<b>"+m(netRevenue(r))+"</b></div><div>DT thuần công ty<b>"+m(companyRevenue(r))+"</b></div><div>Công nợ<b>"+m(r.gross)+"</b></div><div>Công nợ còn lại<b>"+m(Math.max(r.gross-r.deposit,0))+"</b></div>";
+  el.innerHTML="<div>DT thuần nhân viên<b>"+m(formEmployeeNet(r))+"</b></div><div>DT thuần công ty<b>"+m(companyRevenue(r))+"</b></div><div>Công nợ<b>"+m(r.gross)+"</b></div><div>Công nợ còn lại<b>"+m(Math.max(r.gross-r.deposit,0))+"</b></div>";
 }
 function empModal(){
   var e=modal.e||{code:"",full_name:"",team:"",team_role:"member",department:"",position:"",monthly_target:0};
