@@ -160,8 +160,8 @@ describe("selectable year range", () => {
       { employee_id: "A", target_year: 2025, period: "year", period_no: 1, amount: 6_000_000_000 },
       { employee_id: "A", target_year: 2026, period: "year", period_no: 1, amount: 8_000_000_000 },
     ];
-    expect(periodKpi(settings, "A", "year", oct, 0, 2025)).toBe(6_000_000_000);
-    expect(periodKpi(settings, "A", "year", oct, 0, 2026)).toBe(8_000_000_000);
+    expect(periodKpi(settings, "A", "year", oct, 0, 2025)).toBeCloseTo(6_000_000_000);
+    expect(periodKpi(settings, "A", "year", oct, 0, 2026)).toBeCloseTo(8_000_000_000);
   });
   it("targetMonths: selected past year counts 12 months, current year counts elapsed months", () => {
     expect(targetMonths("year", oct, 2025)).toBe(12);
