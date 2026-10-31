@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canWriteEmployeeRecord, companyNet, costBreakdown, kpiStatus, readableEmployees, selectedEmployees, canWriteRecords, companyRevenue, daysOwed, debtWarning, formatMoneyInput, monthlyKpi, netBeforeAllocation, netRevenue, outstanding, parseMoneyInput, periodKpi, remainingDebt } from "./finance";
+import { canWriteEmployeeRecord, companyNet, costBreakdown, debtAmount, kpiStatus, readableEmployees, recordScopeEmployees, selectedEmployees, canWriteRecords, companyRevenue, daysOwed, debtWarning, formatMoneyInput, monthlyKpi, netBeforeAllocation, netRevenue, outstanding, parseMoneyInput, periodKpi, remainingDebt } from "./finance";
 
 const base = {
   gross: 100_000_000,
@@ -17,14 +17,24 @@ const today = new Date(2026, 9, 25);
 describe("team, selection and cost rules", () => {
   const leader = { id: "L", team: "A", team_role: "leader" };
   const members = [leader, { id: "A1", team: "A", team_role: "member" }, { id: "B1", team: "B", team_role: "member" }];
-  it("leader defaults to all same-team employees, not another team", () => {
-    expect(readableEmployees(members, "staff", leader).map(e => e.id)).toEqual(["L", "A1"]);
+  it("staff dashboard shows only own employee, even for team leaders", () => {
+    expect(readableEmployees(members, "staff", leader).map(e => e.id)).toEqual(["L"]);
   });
   it("member sees only own employee", () => {
     expect(readableEmployees(members, "staff", members[1]).map(e => e.id)).toEqual(["A1"]);
   });
-  it("empty-team leader does not gain access to unassigned employees", () => {
-    expect(readableEmployees([{ ...leader, team: "" }, { id: "U", team: "", team_role: "member" }], "staff", { ...leader, team: "" }).map(e => e.id)).toEqual(["L"]);
+  it("admin and manager dashboards see the whole company", () => {
+    expect(readableEmployees(members, "admin", null).map(e => e.id)).toEqual(["L", "A1", "B1"]);
+    expect(readableEmployees(members, "manager", null).map(e => e.id)).toEqual(["L", "A1", "B1"]);
+  });
+  it("records list: admin sees all, manager sees own team, staff sees own", () => {
+    expect(recordScopeEmployees(members, "admin", null).map(e => e.id)).toEqual(["L", "A1", "B1"]);
+    expect(recordScopeEmployees(members, "manager", leader).map(e => e.id)).toEqual(["L", "A1"]);
+    expect(recordScopeEmployees(members, "staff", members[1]).map(e => e.id)).toEqual(["A1"]);
+  });
+  it("manager without a team sees only own records", () => {
+    expect(recordScopeEmployees(members, "manager", { id: "M", team: "", team_role: "member" }).map(e => e.id)).toEqual([]);
+    expect(recordScopeEmployees([...members, { id: "M", team: "", team_role: "member" }], "manager", { id: "M", team: "", team_role: "member" }).map(e => e.id)).toEqual(["M"]);
   });
   it("multi-select includes only selected employees without duplicates", () => {
     expect(selectedEmployees(members, ["L", "B1", "L"]).map(e => e.id)).toEqual(["L", "B1"]);
@@ -40,9 +50,9 @@ describe("team, selection and cost rules", () => {
   it("zero gross never gives an infinite cost percentage", () => {
     expect(costBreakdown([{ ...base, gross: 0 }]).items.map(i => i.pct)).toEqual([0, 0, 0, 0, 0]);
   });
-  it("leader cannot delete or edit a teammate record; manager stays read-only", () => {
+  it("only admin can delete or edit a record", () => {
     expect(canWriteEmployeeRecord("staff", "L", "A1")).toBe(false);
-    expect(canWriteEmployeeRecord("staff", "L", "L")).toBe(true);
+    expect(canWriteEmployeeRecord("staff", "L", "L")).toBe(false);
     expect(canWriteEmployeeRecord("manager", "L", "L")).toBe(false);
     expect(canWriteEmployeeRecord("admin", "L", "A1")).toBe(true);
   });
