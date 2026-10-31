@@ -1,10 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { AlertTriangle, CheckCircle2, Clock, Wallet } from "lucide-react";
 import { AnimatedNumber, percentNumber, useChartAnimation } from "@/components/dashboard/animation";
 import { useFilters } from "@/lib/filters";
 import { useFilteredRecords } from "@/lib/use-filtered";
+import { useMe, type SalesRecord } from "@/lib/data";
+import { supabase } from "@/integrations/supabase/client";
+import { RecordForm, type FormValues } from "@/components/RecordForm";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { agingBucket, collected, daysOwed, debtWarning, formatDateVN, formatVND, outstanding, PERIOD_LABELS } from "@/lib/finance";
 import { shortMoney } from "@/components/dashboard/ui";
 import { DashboardFrame, DashboardHero, DashboardRing, REVENUE_COLORS, RevenueMetric, RevenueProgress, RevenueSection, Sparkline } from "@/components/dashboard/revenue-ui";
