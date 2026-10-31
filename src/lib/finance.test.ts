@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canWriteEmployeeRecord, companyNet, costBreakdown, debtAmount, formEmployeeNet, kpiStatus, readableEmployees, recordScopeEmployees, selectedEmployees, canWriteRecords, companyRevenue, daysOwed, debtWarning, formatMoneyInput, monthlyKpi, netBeforeAllocation, netRevenue, outstanding, parseMoneyInput, periodKpi, remainingDebt } from "./finance";
+import { canWriteEmployeeRecord, companyNet, costBreakdown, debtAmount, formCompanyNet, formEmployeeNet, kpiStatus, readableEmployees, recordScopeEmployees, selectedEmployees, canWriteRecords, companyRevenue, daysOwed, debtWarning, formatMoneyInput, monthlyKpi, netBeforeAllocation, netRevenue, outstanding, parseMoneyInput, periodKpi, remainingDebt } from "./finance";
 
 const base = {
   gross: 100_000_000,
