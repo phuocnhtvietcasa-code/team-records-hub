@@ -65,15 +65,19 @@ describe("finance rules", () => {
   it("net revenue for company is halved", () => {
     expect(netRevenue({ ...base, nature: "cong_ty" })).toBe(39_000_000);
   });
-  it("remaining debt = deposit - user-entered payment", () => {
-    expect(remainingDebt({ ...base, payment_amount: 10_000_000 })).toBe(20_000_000);
+  it("debt = gross - discount + vat", () => {
+    expect(debtAmount(base)).toBe(103_000_000);
+    expect(debtAmount({ ...base, discount: 0, vat: 0 })).toBe(100_000_000);
+  });
+  it("remaining debt = debt - deposit - user-entered payment", () => {
+    expect(remainingDebt({ ...base, payment_amount: 10_000_000 })).toBe(63_000_000);
   });
   it("fully paid overrides remaining debt to zero", () => {
     expect(remainingDebt({ ...base, payment_amount: 10_000_000, debt_status: "thanh_toan_du" })).toBe(0);
   });
   it("remaining debt preserves negative differences and defaults missing payments to zero", () => {
-    expect(remainingDebt({ ...base, payment_amount: 40_000_000 })).toBe(-10_000_000);
-    expect(remainingDebt(base)).toBe(30_000_000);
+    expect(remainingDebt({ ...base, payment_amount: 110_000_000 })).toBe(-37_000_000);
+    expect(remainingDebt(base)).toBe(73_000_000);
   });
   it("existing dashboard outstanding calculation stays unchanged", () => {
     expect(outstanding(base)).toBe(70_000_000);
@@ -111,10 +115,12 @@ describe("online sales and KPI rules", () => {
     expect(formatMoneyInput("1000000")).toBe("1.000.000");
     expect(parseMoneyInput("")).toBe(0);
   });
-  it("manager cannot write records", () => expect(canWriteRecords("manager")).toBe(false));
-  it("admin and staff retain record writes", () => {
+  it("manager and staff cannot write records", () => {
+    expect(canWriteRecords("manager")).toBe(false);
+    expect(canWriteRecords("staff")).toBe(false);
+  });
+  it("only admin retains record writes", () => {
     expect(canWriteRecords("admin")).toBe(true);
-    expect(canWriteRecords("staff")).toBe(true);
   });
   it("splits company net exactly equally without using gross", () => {
     const r = { ...base, nature: "cong_ty" };
