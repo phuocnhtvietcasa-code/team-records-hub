@@ -14,213 +14,16 @@ export type Database = {
   }
   public: {
     Tables: {
-      employees: {
-        Row: {
-          code: string
-          created_at: string
-          department: string
-          full_name: string
-          id: string
-          monthly_target: number
-          position: string
-          team: string
-          team_role: string
-          user_id: string | null
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          department?: string
-          full_name: string
-          id?: string
-          monthly_target?: number
-          position?: string
-          team?: string
-          team_role?: string
-          user_id?: string | null
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          department?: string
-          full_name?: string
-          id?: string
-          monthly_target?: number
-          position?: string
-          team?: string
-          team_role?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      kpi_targets: {
-        Row: {
-          amount: number
-          created_at: string
-          employee_id: string | null
-          id: string
-          period: string
-          period_no: number
-          target_year: number
-        }
-        Insert: {
-          amount?: number
-          created_at?: string
-          employee_id?: string | null
-          id?: string
-          period: string
-          period_no?: number
-          target_year: number
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          employee_id?: string | null
-          id?: string
-          period?: string
-          period_no?: number
-          target_year?: number
-        }
-        Relationships: [
-          {
-            foreignKeyName: "kpi_targets_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      sales_records: {
-        Row: {
-          accessories: number
-          created_at: string
-          created_by: string | null
-          customer: string
-          debt_status: string
-          deposit: number
-          discount: number
-          due_date: string
-          employee_id: string
-          gross: number
-          id: string
-          kts_commission: number
-          nature: string
-          payment_amount: number
-          project: string
-          project_cost: number
-          record_date: string
-          vat: number
-          voucher_no: string
-        }
-        Insert: {
-          accessories?: number
-          created_at?: string
-          created_by?: string | null
-          customer?: string
-          debt_status?: string
-          deposit?: number
-          discount?: number
-          due_date?: string
-          employee_id: string
-          gross?: number
-          id?: string
-          kts_commission?: number
-          nature?: string
-          payment_amount?: number
-          project?: string
-          project_cost?: number
-          record_date?: string
-          vat?: number
-          voucher_no: string
-        }
-        Update: {
-          accessories?: number
-          created_at?: string
-          created_by?: string | null
-          customer?: string
-          debt_status?: string
-          deposit?: number
-          discount?: number
-          due_date?: string
-          employee_id?: string
-          gross?: number
-          id?: string
-          kts_commission?: number
-          nature?: string
-          payment_amount?: number
-          project?: string
-          project_cost?: number
-          record_date?: string
-          vat?: number
-          voucher_no?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "sales_records_employee_id_fkey"
-            columns: ["employee_id"]
-            isOneToOne: false
-            referencedRelation: "employees"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_roles: {
-        Row: {
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Insert: {
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
-        Update: {
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      admin_link_employee: {
-        Args: { _employee_id: string; _user_id: string }
-        Returns: undefined
-      }
-      admin_list_users: {
-        Args: never
-        Returns: {
-          email: string
-          employee_id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }[]
-      }
-      admin_set_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: undefined
-      }
-      can_read_employee: { Args: { _employee_id: string }; Returns: boolean }
-      current_employee_id: { Args: never; Returns: string }
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-      is_manager_or_admin: { Args: { _user_id: string }; Returns: boolean }
+      [_ in never]: never
     }
     Enums: {
-      app_role: "admin" | "manager" | "staff"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -347,8 +150,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      app_role: ["admin", "manager", "staff"],
-    },
+    Enums: {},
   },
 } as const
