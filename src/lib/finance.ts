@@ -139,14 +139,14 @@ export function costBreakdown(records: RecordAmounts[]) {
   return { gross, items, total: items.reduce((sum, item) => sum + item.amount, 0) };
 }
 
-/** Công nợ = Doanh số tổng. */
-export function debtAmount(r: Pick<RecordAmounts, "gross">): number {
-  return r.gross;
+/** Công nợ = Doanh số tổng − Chiết khấu bán hàng + Thuế GTGT. */
+export function debtAmount(r: Pick<RecordAmounts, "gross" | "discount" | "vat">): number {
+  return r.gross - r.discount + r.vat;
 }
 
-/** Công nợ còn lại = Tiền cọc − Số tiền thanh toán; thanh toán đủ luôn bằng 0. */
-export function remainingDebt(r: Pick<RecordAmounts, "deposit" | "payment_amount" | "debt_status">): number {
-  return r.debt_status === "thanh_toan_du" ? 0 : r.deposit - (r.payment_amount ?? 0);
+/** Công nợ còn lại = Công nợ − Tiền cọc − Số tiền thanh toán; thanh toán đủ luôn bằng 0. */
+export function remainingDebt(r: Pick<RecordAmounts, "gross" | "discount" | "vat" | "deposit" | "payment_amount" | "debt_status">): number {
+  return r.debt_status === "thanh_toan_du" ? 0 : debtAmount(r) - r.deposit - (r.payment_amount ?? 0);
 }
 
 export function grossPercentage(amount: number, gross: number): number {
@@ -157,10 +157,10 @@ export function isFullyPaid(r: Pick<RecordAmounts, "debt_status">): boolean {
   return r.debt_status === "thanh_toan_du" || r.debt_status === "thua_tien";
 }
 
-/** Số tiền còn phải thu thực tế (không âm, 0 nếu đã thanh toán đủ). */
+/** Số tiền còn phải thu thực tế (không âm, 0 nếu đã thanh toán đủ). Giữ nguyên công thức gốc, tách biệt khỏi Công nợ còn lại của form. */
 export function outstanding(r: Pick<RecordAmounts, "gross" | "deposit" | "debt_status">): number {
   if (isFullyPaid(r)) return 0;
-  return Math.max(debtAmount(r) - r.deposit, 0);
+  return Math.max(r.gross - r.deposit, 0);
 }
 
 export function collected(r: Pick<RecordAmounts, "gross" | "deposit" | "debt_status">): number {
