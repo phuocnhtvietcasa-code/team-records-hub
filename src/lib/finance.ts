@@ -283,8 +283,9 @@ export function inPeriod(dateStr: string, p: Period, today: Date, sub?: number |
   if (!range) return true;
   const d = parseDate(dateStr);
   if (p === "week" && d.getDay() === 0) return false; // Tuần làm việc: Thứ 2 → Thứ 7, không tính Chủ nhật
+  // Kỳ hiện tại (sub = null) chỉ tính đến hôm nay; kỳ được chọn tường minh dùng trọn khoảng ngày của kỳ.
   const t = startOfDay(today);
-  const end = p === "week" ? range.end : range.end > t ? t : range.end;
+  const end = sub == null && p !== "week" && range.end > t ? t : range.end;
   return d >= range.start && d <= end;
 }
 
