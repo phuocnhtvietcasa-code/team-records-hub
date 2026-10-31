@@ -42,7 +42,7 @@ export const Route = createFileRoute("/_authenticated/phieu")({
   component: PhieuPage,
 });
 
-function PhieuPage() {
+export function PhieuPage() {
   const qc = useQueryClient();
   const { canManage, canWrite, isAdmin, me, role } = useMe();
   const { listFiltered: filtered, listEmployees, employees, empMap, today } = useFilteredRecords();
