@@ -1,17 +1,27 @@
-import { PERIOD_LABELS, type Period } from "@/lib/finance";
+import { PERIOD_LABELS, currentMonthWeek, monthWeekCount, type Period } from "@/lib/finance";
 import { useFilters } from "@/lib/filters";
 import { useFilteredRecords } from "@/lib/use-filtered";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, Users } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import type { Employee } from "@/lib/data";
 
-export function FilterBar() {
-  const { employeeIds, setEmployeeIds, period, setPeriod } = useFilters();
-  const { availableEmployees: employees, scope } = useFilteredRecords();
+const QUARTER_LABELS = ["Quý 1 (1/1–31/3)", "Quý 2 (1/4–30/6)", "Quý 3 (1/7–30/9)", "Quý 4 (1/10–31/12)"];
+
+export function FilterBar({ employees: employeesProp }: { employees?: Employee[] }) {
+  const { employeeIds, setEmployeeIds, period, setPeriod, sub, setSub } = useFilters();
+  const { availableEmployees, scope: hookScope, today } = useFilteredRecords();
+  const employees = employeesProp ?? availableEmployees;
+  const scope = employeesProp
+    ? employeeIds === null
+      ? employees
+      : employees.filter((e) => employeeIds.includes(e.id))
+    : hookScope;
   const [search, setSearch] = useState("");
   const all = employees.length > 0 && scope.length === employees.length;
   const shown = employees.filter((e) => `${e.full_name} ${e.code} ${e.team}`.toLocaleLowerCase("vi").includes(search.toLocaleLowerCase("vi")));
@@ -21,6 +31,22 @@ export function FilterBar() {
     if (checked) ids.add(id); else ids.delete(id);
     setEmployeeIds(Array.from(ids));
   }
+
+  const subOptions: { value: number; label: string }[] =
+    period === "week"
+      ? Array.from({ length: monthWeekCount(today) }, (_, i) => {
+          const w = i + 1;
+          const first = i * 7 + 1;
+          const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+          return { value: w, label: `Tuần ${w} (${first}–${Math.min(w * 7, lastDay)})` };
+        })
+      : period === "month"
+        ? Array.from({ length: 12 }, (_, i) => ({ value: i + 1, label: `Tháng ${i + 1}` }))
+        : period === "quarter"
+          ? QUARTER_LABELS.map((l, i) => ({ value: i + 1, label: l }))
+          : [];
+  const subDefault =
+    period === "week" ? currentMonthWeek(today) : period === "month" ? today.getMonth() + 1 : period === "quarter" ? Math.floor(today.getMonth() / 3) + 1 : null;
 
   return (
     <div className="flex min-w-0 max-w-full flex-wrap items-center gap-3 rounded-xl border bg-card p-3 shadow-card">
@@ -60,6 +86,16 @@ export function FilterBar() {
           </Button>
         ))}
       </div>
+      {subOptions.length > 0 && subDefault !== null && (
+        <Select value={String(sub ?? subDefault)} onValueChange={(v) => setSub(Number(v))}>
+          <SelectTrigger className="w-44 max-w-full" aria-label="Chọn kỳ chi tiết">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {subOptions.map((o) => <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      )}
     </div>
   );
 }
