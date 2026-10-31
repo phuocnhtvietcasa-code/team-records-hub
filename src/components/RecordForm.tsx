@@ -10,7 +10,7 @@ import {
   debtAmount,
   companyRevenue,
   formatVND,
-  netRevenue,
+  formEmployeeNet,
   remainingDebt,
   toISODate,
 } from "@/lib/finance";
@@ -145,7 +145,7 @@ export function RecordForm({
       </fieldset>
 
       <div className="grid min-w-0 gap-3 rounded-lg bg-secondary p-3 text-sm sm:grid-cols-2">
-        <Calc label="DT thuần nhân viên" value={formatVND(netRevenue(amounts))} />
+        <Calc label="DT thuần nhân viên" value={formatVND(formEmployeeNet(amounts))} />
         <Calc label="DT thuần công ty" value={formatVND(companyRevenue(amounts))} />
         <Calc label="Công nợ" value={formatVND(debtAmount(amounts))} />
         <Calc label="Công nợ còn lại" value={formatVND(remainingDebt(amounts))} />

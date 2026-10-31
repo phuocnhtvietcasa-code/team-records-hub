@@ -41,6 +41,10 @@ export function netBeforeAllocation(r: RecordAmounts): number {
 export function netRevenue(r: RecordAmounts): number {
   return netBeforeAllocation(r) * (r.nature === "cong_ty" ? 0.5 : 1);
 }
+/** Form-only employee net: same components as netRevenue but WITHOUT subtracting VAT. */
+export function formEmployeeNet(r: RecordAmounts): number {
+  return (r.gross - r.discount - r.accessories - r.kts_commission - r.project_cost) * (r.nature === "cong_ty" ? 0.5 : 1);
+}
 /** Company share: the other half of company-nature net only. */
 export function companyRevenue(r: RecordAmounts): number {
   return r.nature === "cong_ty" ? netBeforeAllocation(r) / 2 : 0;

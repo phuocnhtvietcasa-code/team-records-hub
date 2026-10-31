@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canWriteEmployeeRecord, companyNet, costBreakdown, debtAmount, kpiStatus, readableEmployees, recordScopeEmployees, selectedEmployees, canWriteRecords, companyRevenue, daysOwed, debtWarning, formatMoneyInput, monthlyKpi, netBeforeAllocation, netRevenue, outstanding, parseMoneyInput, periodKpi, remainingDebt } from "./finance";
+import { canWriteEmployeeRecord, companyNet, costBreakdown, debtAmount, formEmployeeNet, kpiStatus, readableEmployees, recordScopeEmployees, selectedEmployees, canWriteRecords, companyRevenue, daysOwed, debtWarning, formatMoneyInput, monthlyKpi, netBeforeAllocation, netRevenue, outstanding, parseMoneyInput, periodKpi, remainingDebt } from "./finance";
 
 const base = {
   gross: 100_000_000,
@@ -61,6 +61,11 @@ describe("team, selection and cost rules", () => {
 describe("finance rules", () => {
   it("net revenue for individual keeps full amount", () => {
     expect(netRevenue(base)).toBe(78_000_000);
+  });
+  it("form employee net skips VAT while every other component stays", () => {
+    expect(formEmployeeNet(base)).toBe(86_000_000);
+    expect(formEmployeeNet({ ...base, nature: "cong_ty" })).toBe(43_000_000);
+    expect(formEmployeeNet({ ...base, vat: 0 })).toBe(netRevenue({ ...base, vat: 0 }));
   });
   it("net revenue for company is halved", () => {
     expect(netRevenue({ ...base, nature: "cong_ty" })).toBe(39_000_000);
