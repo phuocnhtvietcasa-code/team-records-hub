@@ -1,4 +1,5 @@
 # Repository import
+- [x] Let every role open a voucher from the records table; keep save/delete admin-only in the detail dialog
 - [ ] Finish both HTML download buttons with shared loading, encrypted browser data, and verified file delivery
 - [x] Add fail-fast offline output validation and file:// navigation checks — 7 tests passed; browser verifier exercised on a temporary fixture; real offline output is not yet available
 - [ ] Configure isolated single-file offline build with hash navigation and unchanged React screens
