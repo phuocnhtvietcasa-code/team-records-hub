@@ -67,6 +67,13 @@ describe("finance rules", () => {
     expect(formEmployeeNet({ ...base, nature: "cong_ty" })).toBe(43_000_000);
     expect(formEmployeeNet({ ...base, vat: 0 })).toBe(netRevenue({ ...base, vat: 0 }));
   });
+  it("form company net skips VAT while every other component stays", () => {
+    // (100 - 5 - 3 - 2 - 4) / 2 = 43tr; dashboard companyRevenue still subtracts VAT: 39tr
+    expect(formCompanyNet({ ...base, nature: "cong_ty" })).toBe(43_000_000);
+    expect(companyRevenue({ ...base, nature: "cong_ty" })).toBe(39_000_000);
+    expect(formCompanyNet(base)).toBe(0);
+    expect(formCompanyNet({ ...base, nature: "cong_ty", vat: 0 })).toBe(companyRevenue({ ...base, nature: "cong_ty", vat: 0 }));
+  });
   it("net revenue for company is halved", () => {
     expect(netRevenue({ ...base, nature: "cong_ty" })).toBe(39_000_000);
   });
